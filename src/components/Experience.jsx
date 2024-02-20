@@ -40,6 +40,7 @@ export const Experience = () => {
   },[curve]);
 
   const cameraGroup = useRef();
+  const airplane = useRef();
   const scroll = useScroll();
 
   useFrame((_state, delta) => {
@@ -48,6 +49,25 @@ export const Experience = () => {
       linePoints.length - 1
     );
     const curPoint = linePoints[curPointIndex];
+    const pointAhead = linePoints[Math.min(curPointIndex + 1), linePoints.length - 1];
+
+    const xDisplacement = (pointAhead.x - curPoint.x) * 80;
+
+    // Math.PI / 2 -> LEFT
+    // -Math.PI / 2 -> RIGHT
+
+    const angleRotation = (xDisplacement < 0 ? 1 : -1) * Math.min(Math.abs(xDisplacement), Math.PI / 3);
+
+    const targetAirplaneQuaternion = new THREE.Quaternion().setFromEuler(
+      new THREE.Euler(
+        airplane.current.rotation.x,
+        airplane.current.rotation.y,
+        angleRotation,
+      )
+    )
+
+    airplane.current.quaternion.slerp(targetAirplaneQuaternion, delta * 2);
+
     cameraGroup.current.position.lerp(curPoint, delta * 24);
   });
 
@@ -57,13 +77,15 @@ export const Experience = () => {
       <group ref={cameraGroup}>
         <Background />
         <PerspectiveCamera position={[0,0,5]} fov={30} makeDefault />
-        <Float floatIntensity={2} speed={2}>
-          <Airplane
-            rotation-y={Math.PI / 2}
-            scale={[0.2,0.2,0.2]}
-            position-y={0.1} 
-          />
-        </Float>
+        <group ref={airplane}>
+          <Float floatIntensity={2} speed={2}>
+            <Airplane
+              rotation-y={Math.PI / 2}
+              scale={[0.2,0.2,0.2]}
+              position-y={0.1} 
+            />
+          </Float>
+        </group>
       </group>
 
       {/* LINE */ }
