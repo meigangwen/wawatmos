@@ -10,7 +10,7 @@ function App() {
         fov: 30,
       }}>
         <color attach="background" args={["#ececec"]} />
-        <ScrollControls pages={100} damping={1} >
+        <ScrollControls pages={20} damping={0.5} >
           <Experience />
         </ScrollControls>
       </Canvas>
