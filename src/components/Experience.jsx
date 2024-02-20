@@ -102,7 +102,7 @@ We have a wide range of beverages!`,
   const cameraRail = useRef();
   const airplane = useRef();
   const scroll = useScroll();
-  const lastScroll = useRef();
+  const lastScroll = useRef(0);
 
   useFrame((_state, delta) => {
     const scrollOffset = Math.max(0, scroll.offset);
