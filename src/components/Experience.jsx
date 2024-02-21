@@ -1,4 +1,5 @@
-import { Float, Text, PerspectiveCamera, useScroll} from "@react-three/drei";
+import { Float, PerspectiveCamera, useScroll} from "@react-three/drei";
+import { gsap } from "gsap";
 import { useFrame } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { Background } from "./Background";
@@ -30,12 +31,11 @@ export const Experience = () => {
     []
   );
 
+  const sceneOpacity = useRef(0);
+  const lineMaterialRef = useRef();
+
   const curve = useMemo(() => {
-    return new THREE.CatmullRomCurve3(
-    curvePoints,  
-    false,
-    "catmullrom",
-    0.5);
+    return new THREE.CatmullRomCurve3(curvePoints,  false,"catmullrom",0.5);
   }, []);
 
   const textSections = useMemo(() => {
@@ -84,12 +84,6 @@ We have a wide range of beverages!`,
   ]
   }, []);
 
-  /*
-  const linePoints = useMemo( () => {
-    return curve.getPoints(LINE_NB_POINTS);
-  },[curve]);
-  */
-
   const shape = useMemo( () => {
     const shape = new THREE.Shape();
     shape.moveTo(0,-0.08);
@@ -100,9 +94,11 @@ We have a wide range of beverages!`,
 
   const cameraGroup = useRef();
   const cameraRail = useRef();
-  const airplane = useRef();
+  const camera = useRef();
   const scroll = useScroll();
   const lastScroll = useRef(0);
+
+  //const { play, setHasScroll, end, setEnd } = usePlay();
 
   useFrame((_state, delta) => {
     const scrollOffset = Math.max(0, scroll.offset);
@@ -141,6 +137,7 @@ We have a wide range of beverages!`,
     lerpedScrollOffset = Math.max(lerpedScrollOffset, 0);
 
     lastScroll.current = lerpedScrollOffset;
+    tl.current.seek(lerpedScrollOffset * tl.current.duration());
 
     const curPoint = curve.getPoint(lerpedScrollOffset);
 
@@ -157,8 +154,8 @@ We have a wide range of beverages!`,
       new THREE.Vector3()
     );
     const targetLookAt = new THREE.Vector3()
-    .subVectors(curPoint, lookAtPoint)
-    .normalize();
+      .subVectors(curPoint, lookAtPoint)
+      .normalize();
 
     const lookAt = currentLookAt.lerp(targetLookAt, delta * 24);
     cameraGroup.current.lookAt(
@@ -167,7 +164,7 @@ We have a wide range of beverages!`,
 
     //Airplane rotation
 
-    const tangent = curve.getTangent(scrollOffset + CURVE_AHEAD_AIRPLANE);
+    const tangent = curve.getTangent(lerpedScrollOffset + CURVE_AHEAD_AIRPLANE);
     
     const nonLerpLookAt = new THREE.Group();
     nonLerpLookAt.position.copy(curPoint);
@@ -203,16 +200,49 @@ We have a wide range of beverages!`,
         airplane.current.rotation.y,
         angle
       )
-    )
+    );
     airplane.current.quaternion.slerp(targetAirplaneQuaternion, delta *2);
   });
+
+
+  // END of useFrame
+  const airplane = useRef();
+  const tl = useRef();
+  const backgroundColors = useRef({
+    colorA: "#3535cc",
+    colorB: "#abaadd",
+  });
+
+  useLayoutEffect(() => {
+    tl.current = gsap.timeline();
+
+    tl.current.to(backgroundColors.current, {
+      duration: 1,
+      colorA: "#6f35cc",
+      colorB: "#ffad30",
+    });
+
+    tl.current.to(backgroundColors.current, {
+      duration: 1,
+      colorA: "#424242",
+      colorB: "#ffcc00",
+    });
+
+    tl.current.to(backgroundColors.current, {
+      duration: 1,
+      colorA: "#81318b",
+      colorB: "#55ab8f",
+    });
+
+    tl.current.pause();
+  },[]);
 
   return (
     <>
       <directionalLight position={[0, 3, 1]} intensity={0.1} />
       {/* <OrbitControls enableZoom={false} /> */}
       <group ref={cameraGroup}>
-        <Background />
+        <Background backgroundColors={backgroundColors} />
         <group ref={cameraRail}>
           <PerspectiveCamera position={[0,0,5]} fov={30} makeDefault />
         </group>
