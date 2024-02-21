@@ -9,6 +9,8 @@ import * as THREE from "three";
 import {Vector3, Euler} from "three";
 import { TextSection } from "./TextSection";
 import { fadeOnBeforeCompile } from "../utils/fadeMaterial";
+import { usePlay } from "../contexts/Play";
+import { Speed } from "./Speeds";
 
 const LINE_NB_POINTS = 1000;
 const CURVE_DISTANCE = 250;
@@ -275,9 +277,46 @@ We have a wide range of beverages!`,
   const scroll = useScroll();
   const lastScroll = useRef(0);
 
-  //const { play, setHasScroll, end, setEnd } = usePlay();
+  const { play, setHasScroll, end, setEnd } = usePlay();
 
   useFrame((_state, delta) => {
+
+    if (window.innerWidth > window.innerHeight) {
+      // LANDSCAPE
+      camera.current.fov = 30;
+      camera.current.position.z = 5;
+    } else {
+      // PORTRAIT
+      camera.current.fov = 80;
+      camera.current.position.z = 2;
+    }
+
+    if (lastScroll.current <= 0 && scroll.offset > 0) {
+      setHasScroll(true);
+    }
+
+    if (play && !end && sceneOpacity.current < 1) {
+      sceneOpacity.current = THREE.MathUtils.lerp(
+        sceneOpacity.current,
+        1,
+        delta * 0.1
+      );
+    }
+
+    if (end && sceneOpacity.current > 0) {
+      sceneOpacity.current = THREE.MathUtils.lerp(
+        sceneOpacity.current,
+        0,
+        delta
+      );
+    }
+
+    lineMaterialRef.current.opacity = sceneOpacity.current;
+
+    if (end) {
+      return;
+    }
+
     const scrollOffset = Math.max(0, scroll.offset);
 
     let friction = 1;
@@ -379,6 +418,11 @@ We have a wide range of beverages!`,
       )
     );
     airplane.current.quaternion.slerp(targetAirplaneQuaternion, delta *2);
+
+    if ( cameraGroup.current.position.z < curvePoints[curvePoints.length - 1].z + 100) {
+      setEnd(true);
+      planeOutTl.current.play();
+    }
   });
 
 
@@ -389,6 +433,9 @@ We have a wide range of beverages!`,
     colorA: "#3535cc",
     colorB: "#abaadd",
   });
+
+  const planeInTl = useRef();
+  const planeOutTl = useRef();
 
   useLayoutEffect(() => {
     tl.current = gsap.timeline();
@@ -412,16 +459,58 @@ We have a wide range of beverages!`,
     });
 
     tl.current.pause();
+
+    planeInTl.current = gsap.timeline();
+    planeInTl.current.pause();
+    planeInTl.current.from(airplane.current.position, {
+      duration: 3,
+      z: 5,
+      y: -2,
+    });
+
+    planeOutTl.current = gsap.timeline();
+    planeOutTl.current.pause();
+
+    planeOutTl.current.to(
+      airplane.current.position,
+      {
+        duration: 10,
+        z: -250,
+        y: 10,
+      },
+      0
+    );
+    planeOutTl.current.to(
+      cameraRail.current.position,
+      {
+        duration: 8,
+        y: 12,
+      },
+      0
+    );
+    planeOutTl.current.to(airplane.current.position, {
+      duration: 1,
+      z: -1000,
+    });
+
   },[]);
 
-  return (
+  useEffect(() => {
+    if (play) {
+      planeInTl.current.play();
+    }
+  }, [play]);
+
+  return useMemo(
+    () => (
     <>
       <directionalLight position={[0, 3, 1]} intensity={0.1} />
       {/* <OrbitControls enableZoom={false} /> */}
       <group ref={cameraGroup}>
+        <Speed />
         <Background backgroundColors={backgroundColors} />
         <group ref={cameraRail}>
-          <PerspectiveCamera position={[0,0,5]} fov={30} makeDefault />
+          <PerspectiveCamera ref={camera} position={[0,0,5]} fov={30} makeDefault />
         </group>
         <group ref={airplane}>
           <Float floatIntensity={1} speed={1.5} rotationIntensity={0.5}>
@@ -456,7 +545,7 @@ We have a wide range of beverages!`,
         />
         <meshStandardMaterial 
           color={"white"} 
-          opacity={1} 
+          ref={lineMaterialRef}
           transparent
           envMapIntensity={2}
           onBeforeCompile={fadeOnBeforeCompile} 
@@ -470,5 +559,5 @@ We have a wide range of beverages!`,
       ))}
 
     </>
-  );
+   ),[]);
 };
