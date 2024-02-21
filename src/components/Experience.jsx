@@ -8,6 +8,7 @@ import { Cloud } from "./Cloud";
 import * as THREE from "three";
 import {Vector3, Euler} from "three";
 import { TextSection } from "./TextSection";
+import { fadeOnBeforeCompile } from "../utils/fadeMaterial";
 
 const LINE_NB_POINTS = 1000;
 const CURVE_DISTANCE = 250;
@@ -440,7 +441,7 @@ We have a wide range of beverages!`,
         ))
       }
 
-      {/* LINE */ }
+      {/* CURVE LINE */ }
       <group position-y={-2}>
       <mesh>
         <extrudeGeometry
@@ -457,7 +458,8 @@ We have a wide range of beverages!`,
           color={"white"} 
           opacity={1} 
           transparent
-          envMapIntensity={2} 
+          envMapIntensity={2}
+          onBeforeCompile={fadeOnBeforeCompile} 
         />
       </mesh>
       </group>
